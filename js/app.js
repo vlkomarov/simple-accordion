@@ -3,10 +3,8 @@
 
 	/* Accordion */	
 	(function() {
-
-		/* Handlebars Templates */
-		/* Assuming data will come as some API JSON response for example */
-		var data = {
+		/* Handlebars Templates + Kendo DataSource simple implementation */
+		var res = {
 			items: [
 				{
 					title: 'Click to close <img src="./images/arrow-opened.png" alt="" />',
@@ -27,60 +25,75 @@
 			]
 		};
 
+		/* Helpers */
 		Handlebars.registerHelper('accordion', function(items, options) {
 			var content = '';
 		  for (var i = 0, ln = items.length; i < ln; i++) {
 		    content = content + options.fn(items[i]);
 		  }
 		  return content;
-		});
+		});		
 
-		var source   = document.getElementById('accordion-template').innerHTML;
-		var template = Handlebars.compile(source);
-		var accTpl		= template(data);
+		/* Kendo DataSource + Handlebars */
+		var accordion = document.getElementById('accordion');	
+		var source   	= document.getElementById('accordion-template').innerHTML;
+		var template 	= Handlebars.compile(source);			
 
-		var accordion = document.getElementById('accordion');
+		var dataSource = new kendo.data.DataSource({
+      data: res.items,
+      change: function(e) {
+		    var view = this.view();
+		    var d = {items: []};
 
-		accordion.innerHTML = accTpl;
+		    for (var i = 0, ln = view.length; i < ln; i++) {
+		    	d.items[i] = {
+		    		title: view[i].title,
+		    		body: view[i].body
+		    	};
+		    }
 
-		/* Accordion initialisation */
-		console.log('Init!');	
+		    var accTpl = template(d);
+		    accordion.innerHTML = accTpl;
+		  }
+    });
 
-		var accordionSections = accordion.children;
-		var accordionContentDivs = accordion.querySelectorAll('div');
+    var init = function() {
+    	/* Accordion initialisation */
+			console.log('Init!');	
 
-		var headingClosed = 'Click to open <img src="./images/arrow-closed.png" alt="" />';
-		var headingOpened = 'Click to close <img src="./images/arrow-opened.png" alt"" />';	
+			var accordionSections = accordion.children;
+			var accordionContentDivs = accordion.querySelectorAll('div');
 
-		// Animate.css effects: https://daneden.github.io/animate.css/
-		var animationEffect = 'jello';
+			var headingClosed = 'Click to open <img src="./images/arrow-closed.png" alt="" />';
+			var headingOpened = 'Click to close <img src="./images/arrow-opened.png" alt"" />';	
 
-		accordionContentDivs[0].classList = 'active animated ' + animationEffect;
+			// Animate.css effects: https://daneden.github.io/animate.css/
+			var animationEffect = 'jello';
 
-		for (var i = 0, l = accordionSections.length; i < l; i++) {
-			accordionSections[i].children[0].addEventListener('click', function(e) {
-				var section	= e.target.parentNode;
-				var content = section.children[1];
-				var classes = content.className.split(' ');
+			accordionContentDivs[0].classList = 'active animated ' + animationEffect;
 
-				removeAllActiveClasses(accordionContentDivs);
+			for (var i = 0, ln = accordionSections.length; i < ln; i++) {
+				accordionSections[i].children[0].addEventListener('click', function(e) {
+					var section	= e.target.parentNode;
+					var content = section.children[1];
+					var classes = content.className.split(' ');
+					
+					for (var i = 0, l = accordionContentDivs.length; i < l; i++) {
+						accordionContentDivs[i].parentNode.children[0].innerHTML = headingClosed;
+						accordionContentDivs[i].classList = '';
+					}
 
-				if (classes.indexOf('active') === -1) {
-					e.target.innerHTML = headingOpened;
-					content.classList = 'active animated ' + animationEffect;
-				} else {
-					e.target.innerHTML = headingClosed;
-				}				
-			}, false);
-		}
+					if (classes.indexOf('active') === -1) {
+						e.target.innerHTML = headingOpened;
+						content.classList = 'active animated ' + animationEffect;
+					} else {
+						e.target.innerHTML = headingClosed;
+					}				
+				}, false);
+			}	
+    };
 
-		/* Helpers */
-		function removeAllActiveClasses(collection) {
-			for (var i = 0, l = collection.length; i < l; i++) {
-				collection[i].parentNode.children[0].innerHTML = headingClosed;
-				collection[i].classList = '';
-			}
-		}		
+    dataSource.read().then(init());    			
 	})();
 
 })();
